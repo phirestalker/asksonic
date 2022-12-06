@@ -2,7 +2,7 @@ from typing import Optional, Union
 from flask_ask.models import statement
 from asksonic.utils.response import play_track_response
 from flask.templating import render_template
-from flask_ask import question, audio
+from flask_ask import question, audio, session
 from asksonic import ask, logger, tracks_count
 from asksonic.utils.subsonic import subsonic
 from . import queue
@@ -90,6 +90,53 @@ def list_artist_albums(artist: str) -> Union[audio, statement]:
     return statement(
         render_template('artist_not_found', artist=artist)
     )
+
+
+@ask.intent('AskSonicPlaySongIntent')
+def play_song(title: str, artist: Optional[str]) -> Union[audio, statement]:
+    if title.find('"') != -1:
+        title = title.split('"')[1]
+    log(f'Play Song: {artist} - {title}')
+    tracks = subsonic.get_songs(title, artist)
+    if tracks:
+        tracks = tracks[:5]
+        if len(tracks) < 2:
+            track = queue.reset(tracks)
+            return play_track_response(
+                track,
+                render_template(
+                    'playing_song',
+                    title=track.title, artist=track.artist
+                )
+            )
+        session.attributes['found_songs'] = [t.id for t in tracks]
+        return question(f'I found multiple songs. Do you want to hear {tracks[0].title} by {tracks[0].artist}?')
+    return statement(
+        render_template('song_not_found', song=title, artist=artist)
+    )
+
+
+@ask.intent('AMAZON.YesIntent')
+def yes_intent() -> Union[audio, statement]:
+    songs = session.attributes['found_songs']
+    track = queue.reset([subsonic.get_track(songs[0])])
+    return play_track_response(
+        track,
+        render_template(
+            'playing_song',
+            title=track.title, artist=track.artist
+        )
+    )
+
+
+@ask.intent('AMAZON.NoIntent')
+def no_intent():
+    songs = session.attributes['found_songs']
+    del songs[0]
+    track = subsonic.get_track(songs[0])
+    if len(songs) < 1:
+        return statement('No more matches')
+    return question(f'Do you want to hear {track.title} by {track.artist}?')
 
 
 def log(msg: str) -> None:

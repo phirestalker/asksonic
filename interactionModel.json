@@ -115,7 +115,6 @@
                     "samples": [
                         "play artist {artist}",
                         "play music by {artist}",
-                        "play songs by {artist}",
                         "play the artist {artist}"
                     ]
                 },
@@ -179,6 +178,54 @@
                 },
                 {
                     "name": "AMAZON.ShuffleOnIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AskSonicShuffleGenreIntent",
+                    "slots": [
+                        {
+                            "name": "genre",
+                            "type": "AMAZON.Genre"
+                        }
+                    ],
+                    "samples": [
+                        "id like to hear {genre}",
+                        "listen to {genre} music",
+                        "play some {genre}",
+                        "can you play {genre}",
+                        "I want to hear some {genre}",
+                        "I want to hear {genre}",
+                        "shuffle some {genre} music",
+                        "play {genre}",
+                        "play {genre} music",
+                        "play some {genre} music"
+                    ]
+                },
+                {
+                    "name": "AskSonicPlaySongIntent",
+                    "slots": [
+                        {
+                            "name": "title",
+                            "type": "AMAZON.MusicRecording"
+                        },
+                        {
+                            "name": "artist",
+                            "type": "AMAZON.MusicGroup"
+                        }
+                    ],
+                    "samples": [
+                        "play song {title}",
+                        "play the song {title}",
+                        "play the song {title} by {artist}",
+                        "play song {title} by {artist}"
+                    ]
+                },
+                {
+                    "name": "AMAZON.YesIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.NoIntent",
                     "samples": []
                 }
             ],
@@ -273,6 +320,28 @@
                             "prompts": {}
                         }
                     ]
+                },
+                {
+                    "name": "AskSonicPlaySongIntent",
+                    "delegationStrategy": "SKILL_RESPONSE",
+                    "confirmationRequired": false,
+                    "prompts": {},
+                    "slots": [
+                        {
+                            "name": "title",
+                            "type": "AMAZON.MusicRecording",
+                            "confirmationRequired": false,
+                            "elicitationRequired": false,
+                            "prompts": {}
+                        },
+                        {
+                            "name": "artist",
+                            "type": "AMAZON.MusicGroup",
+                            "confirmationRequired": false,
+                            "elicitationRequired": false,
+                            "prompts": {}
+                        }
+                    ]
                 }
             ],
             "delegationStrategy": "ALWAYS"
@@ -304,7 +373,17 @@
                         "value": "What playlist should I play?"
                     }
                 ]
+            },
+            {
+                "id": "Elicit.Slot.153296507969.388385612322",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "What song do you want to hear?"
+                    }
+                ]
             }
         ]
     }
 }
+

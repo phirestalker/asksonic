@@ -2,3 +2,5 @@ Flask-Ask @ git+https://github.com/srichter/flask-ask.git@flask2
 gunicorn==20.1.0
 py-sonic==0.7.9
 requests==2.25.1
+python-Levenshtein
+fuzzywuzzy
