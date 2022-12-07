@@ -1,6 +1,6 @@
 from typing import Optional, Union
 from flask_ask.models import statement
-from asksonic.utils.response import play_track_response
+from asksonic.utils.response import play_track_response, enqueue_track_response
 from flask.templating import render_template
 from flask_ask import question, audio, session
 from asksonic import ask, logger, tracks_count
@@ -69,6 +69,7 @@ def play_album(album: str, artist: Optional[str]) -> Union[audio, statement]:
 @ask.intent('AskSonicPlayPlaylistIntent')
 def play_playlist(mode: str, playlist: str) -> Union[audio, statement]:
     shuffle_playlist = True if (mode == 'shuffle') else False
+    shuffled = 'shuffled' if shuffle_playlist else ''
     log('Play playlist {playlist}')
     tracks = subsonic.playlist_tracks(playlist, shuffle_playlist)
     if tracks:
@@ -77,7 +78,8 @@ def play_playlist(mode: str, playlist: str) -> Union[audio, statement]:
             track,
             render_template(
                 'playing_playlist',
-                playlist=playlist
+                playlist=playlist,
+                shuffled=shuffled
             )
         )
     return statement(render_template('playlist_not_found', playlist=playlist))
@@ -102,39 +104,40 @@ def list_artist_albums(artist: str) -> Union[audio, statement]:
 
 @ask.intent('AskSonicPlaySongIntent')
 def play_song(title: str, artist: Optional[str]) -> Union[audio, statement]:
-    if title.find('"') != -1:
-        title = title.split('"')[1]
-    log(f'Play Song: {artist} - {title}')
-    tracks = subsonic.get_songs(title, artist)
-    if tracks:
-        tracks = tracks[:5]
-        if len(tracks) < 2:
-            track = queue.reset(tracks)
-            return play_track_response(
-                track,
-                render_template(
-                    'playing_song',
-                    title=track.title, artist=track.artist
-                )
-            )
-        session.attributes['found_songs'] = [t.id for t in tracks]
-        return question(f'I found multiple songs. Do you want to hear {tracks[0].title} by {tracks[0].artist}?')
-    return statement(
-        render_template('song_not_found', song=title, artist=artist)
-    )
+    return find_song(title, artist, False)
+
+
+@ask.intent('AskSonicQueueSongIntent')
+def queue_song(title: str, artist: Optional[str]) -> Union[audio, statement]:
+    return find_song(title, artist, True)
 
 
 @ask.intent('AMAZON.YesIntent')
 def yes_intent() -> Union[audio, statement]:
     songs = session.attributes['found_songs']
-    track = queue.reset([subsonic.get_track(songs[0])])
-    return play_track_response(
-        track,
-        render_template(
-            'playing_song',
-            title=track.title, artist=track.artist
+    queue_song = session.attributes['queue_song']
+    action = 'Queue' if queue_song else 'Play'
+    track = subsonic.get_track(songs[0])
+    if queue_song:
+        queue.prepend(track)
+        return enqueue_track_response(
+            track,
+            render_template(
+                'playing_song',
+                title=track.title, artist=track.artist,
+                action=action
+            )
         )
-    )
+    else:
+        track = queue.reset([track])
+        return play_track_response(
+            track,
+            render_template(
+                'playing_song',
+                title=track.title, artist=track.artist,
+                action=action
+            )
+        )
 
 
 @ask.intent('AMAZON.NoIntent')
@@ -145,6 +148,43 @@ def no_intent():
     if len(songs) < 1:
         return statement('No more matches')
     return question(f'Do you want to hear {track.title} by {track.artist}?')
+
+
+def find_song(title: str, artist: Optional[str], queue_song: bool) -> Union[audio, statement]:
+    action = 'Queue' if queue_song else 'Play'
+    if title.find('"') != -1:
+        title = title.split('"')[1]
+    tracks = subsonic.get_songs(title, artist)
+    log(f'{action} Song: {artist} - {title}')
+    if tracks:
+        tracks = tracks[:5]
+        if len(tracks) < 2:
+            if queue_song:
+                queue.prepend(tracks[0])
+                return enqueue_track_response(
+                    tracks[0],
+                    render_template(
+                        'playing_song',
+                        title=tracks[0].title, artist=tracks[0].artist,
+                        action=action
+                    )
+                )
+            else:
+                track = queue.reset(tracks)
+                return play_track_response(
+                    track,
+                    render_template(
+                        'playing_song',
+                        title=track.title, artist=track.artist,
+                        action=action
+                    )
+                )
+        session.attributes['found_songs'] = [t.id for t in tracks]
+        session.attributes['queue_song'] = queue_song
+        return question(f'I found multiple songs. Do you want to {action.lower()} {tracks[0].title} by {tracks[0].artist}?')
+    return statement(
+        render_template('song_not_found', song=title, artist=artist)
+    )
 
 
 def log(msg: str) -> None:

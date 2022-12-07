@@ -25,12 +25,15 @@ AskSonic is an Alexa skill to play music from Subsonic API compatible music serv
 - Play a song
     - _Ask sub sonic to play song Hysteria_
     - _Ask sub sonic to play song Hello by Lionel Richie_
+- Play a song next or queue song
+    - _Ask sub sonic to queue song Hysteria_
+    - _Ask sub sonic to queue song Hello by Lionel Richie_
 
 Standard playback controls (_Alexa: Pause, Resume, Previous, Next, Shuffle, etc._) can be used without using the skill's name.
 AskSonic will scrobble tracks with the server after they finish playing.
 
 ### Planned Features
-- Add specific songs to the play queue via interactive search
+- Ideas?
 
 ## Setup
 AskSonic can easily run [alongside your Subsonic server](#running-locally). Once it's running, you'll need to [Create the Alexa skill](#creating-the-alexa-skill)

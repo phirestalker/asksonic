@@ -227,6 +227,25 @@
                 {
                     "name": "AMAZON.NoIntent",
                     "samples": []
+                },
+                {
+                    "name": "AskSonicQueueSongIntent",
+                    "slots": [
+                        {
+                            "name": "title",
+                            "type": "AMAZON.MusicRecording"
+                        },
+                        {
+                            "name": "artist",
+                            "type": "AMAZON.MusicGroup"
+                        }
+                    ],
+                    "samples": [
+                        "next play song {title} by {artist}",
+                        "next play song {title}",
+                        "Queue song {title} by {artist}",
+                        "Queue song {title}"
+                    ]
                 }
             ],
             "types": [
