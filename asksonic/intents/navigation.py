@@ -143,7 +143,8 @@ def yes_intent() -> Union[audio, statement]:
 @ask.intent('AMAZON.NoIntent')
 def no_intent():
     songs = session.attributes['found_songs']
-    action = session.attributes['action']
+    queue_song = session.attributes['queue_song']
+    action = 'Queue' if queue_song else 'Play'
     del songs[0]
     track = subsonic.get_track(songs[0])
     if len(songs) < 1:
