@@ -3,6 +3,7 @@ from urllib.parse import quote_plus
 from libsonic import Connection
 from urllib.request import Request
 from random import shuffle
+from fuzzywuzzy import fuzz
 from .track import Track
 
 
@@ -83,8 +84,8 @@ class Subsonic(Connection):
                 return None
         return self._find_x('album', query)
 
-    def random_tracks(self, count: int = 50) -> list[Track]:
-        tracks = self.getRandomSongs(count)
+    def random_tracks(self, count: int = 50, genre: str = None) -> list[Track]:
+        tracks = self.getRandomSongs(count, genre)
         tracks = tracks['randomSongs']['song']
         tracks = [Track(**track) for track in tracks]
         return tracks
@@ -142,3 +143,32 @@ class Subsonic(Connection):
             shuffle(tracks)
         tracks = [Track(**track) for track in tracks]
         return tracks
+
+    def get_songs(self, title: str, artist: str = None, count: int = 20) -> Optional[list[Track]]:
+        result = self.search(
+            query=title,
+            search_options={'songCount': count}
+        )
+        if 'song' not in result['searchResult3']:
+            return None
+        tracks = result['searchResult3']['song']
+        tracks = [Track(**track) for track in tracks]
+        if artist is not None:
+            tracks = self.filter_tracks(tracks, artist)
+        return tracks
+
+    def get_track(self, id: str) -> dict:
+        track = self.getSong(id)['song']
+        track = Track(**track)
+        return track
+
+    def filter_tracks(self, tracks: list[Track], artist: str) -> list[Track]:
+        best_match = 0
+        filtered_tracks = []
+        for track in tracks:
+            ratio = fuzz.partial_ratio(artist, track.artist)
+            if ratio > best_match and ratio > 80:
+                filtered_tracks.insert(0,track)
+                best_match = ratio
+        return filtered_tracks
+
